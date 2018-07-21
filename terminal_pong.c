@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #define EXIT_SUCCESS 0
-#define PADDLE "|\n |\n |\n |"
+#define PADDLE "|\n  |\n  |\n  |"
 #define BALL "o"
 // Stores our balls position
 typedef struct _Ball {
@@ -39,26 +39,35 @@ Paddle moveUserPaddle(Paddle userPaddle){
   return userPaddle;
 }
 
-Paddle moveComputerPaddle(Paddle computerPaddle, Ball b){
-  computerPaddle.y = b.y;
-  //mvprintw(computerPaddle.y,computerPaddle.x,PADDLE);
+Paddle moveComputerPaddle(Paddle computerPaddle, Ball b, int width, char* comp_paddle){
+  //construct computer paddle string
+  //comp_paddle[0] = '|';
+  for(int i = 0; i < 4; i++){
+    for(int j = 0; j < width; j++){
+      comp_paddle[i*width+j] = ' ';
+    }
+    comp_paddle[i*width+width-1] = '|';
+    comp_paddle[i*width+width] = '\n';
+  }
+  computerPaddle.y = b.y-2;
+  mvprintw(computerPaddle.y,computerPaddle.x,comp_paddle);
   return computerPaddle;
 }
 
 // checks to see if the ball boucnes off the given paddle. 
 void checkBounceOffPaddle(Paddle paddle, Ball* b, Direction* d){
-  bool inPaddle = ((*b).y < (paddle.y + 4) && (*b).y > (paddle.y));
+  bool inPaddle = ((*b).y < (paddle.y + 4) && (*b).y >= (paddle.y));
   if(inPaddle && (*b).x == paddle.x){
         (*d).x *= -1;
         (*b).x += (*d).x;
     }
-    //return b;
 }
 
 void playGame(Ball b, Direction d, Paddle userPaddle, Paddle computerPaddle, int width, int height) {
+   char* comp_paddle = malloc(4*width+6);
    while (true) {
     userPaddle = moveUserPaddle(userPaddle);
-    computerPaddle = moveComputerPaddle(computerPaddle,b);
+    computerPaddle = moveComputerPaddle(computerPaddle,b, width, comp_paddle);
     // print ball
     mvprintw(b.y,b.x,BALL);
 
@@ -82,11 +91,12 @@ void playGame(Ball b, Direction d, Paddle userPaddle, Paddle computerPaddle, int
     }
     //bounce off paddle
     checkBounceOffPaddle(userPaddle,&b,&d);
-    //checkBounceOffPaddle(computerPaddle,b,d);
+    checkBounceOffPaddle(computerPaddle,&b,&d);
     refresh();      // Refresh the output
     usleep(50000);  // Sleep to show output (Single frame)
     clear();        // Clear output
-}
+  }
+   free(comp_paddle);
 }
 
 int main() {
@@ -110,11 +120,11 @@ Direction d = {
  
 // initalze the two paddles
 Paddle userPaddle = {
-  1, height/2
+  2, height/2
 };
 
 Paddle computerPaddle = {
-  width-1, width/2 
+  width-2, width/2 
 };
  while(true){
    // set position of everything
