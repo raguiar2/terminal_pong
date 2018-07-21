@@ -39,9 +39,26 @@ Paddle moveUserPaddle(Paddle userPaddle){
   return userPaddle;
 }
 
+Paddle moveComputerPaddle(Paddle computerPaddle, Ball b){
+  computerPaddle.y = b.y;
+  //mvprintw(computerPaddle.y,computerPaddle.x,PADDLE);
+  return computerPaddle;
+}
+
+// checks to see if the ball boucnes off the given paddle. 
+void checkBounceOffPaddle(Paddle paddle, Ball* b, Direction* d){
+  bool inPaddle = ((*b).y < (paddle.y + 4) && (*b).y > (paddle.y));
+  if(inPaddle && (*b).x == paddle.x){
+        (*d).x *= -1;
+        (*b).x += (*d).x;
+    }
+    //return b;
+}
+
 void playGame(Ball b, Direction d, Paddle userPaddle, Paddle computerPaddle, int width, int height) {
    while (true) {
     userPaddle = moveUserPaddle(userPaddle);
+    computerPaddle = moveComputerPaddle(computerPaddle,b);
     // print ball
     mvprintw(b.y,b.x,BALL);
 
@@ -50,8 +67,11 @@ void playGame(Ball b, Direction d, Paddle userPaddle, Paddle computerPaddle, int
     b.x += d.x;
 
     // Check for ball being outside of our window boundaries
+    // bouncecs off back wall for now
     if (b.x == width - 1 || b.x == 0){
-        // change direction
+        // reset ball and make it go in a random direction
+        b.x = width/2;
+        b.y = height/2;
         d.x *= -1;
         b.x += d.x;
     }
@@ -60,7 +80,9 @@ void playGame(Ball b, Direction d, Paddle userPaddle, Paddle computerPaddle, int
         d.y *= -1;
         b.y += d.y;
     }
-
+    //bounce off paddle
+    checkBounceOffPaddle(userPaddle,&b,&d);
+    //checkBounceOffPaddle(computerPaddle,b,d);
     refresh();      // Refresh the output
     usleep(50000);  // Sleep to show output (Single frame)
     clear();        // Clear output
@@ -94,7 +116,11 @@ Paddle userPaddle = {
 Paddle computerPaddle = {
   width-1, width/2 
 };
- 
- playGame(b,d,userPaddle,computerPaddle, width, height);
+ while(true){
+   // set position of everything
+   // wait for user input
+   // play game
+   playGame(b,d,userPaddle,computerPaddle, width, height);
+ }
 
 }
