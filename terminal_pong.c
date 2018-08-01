@@ -1,9 +1,12 @@
 #include <ncurses.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <time.h>
 #define EXIT_SUCCESS 0
 #define PADDLE "|\n  |\n  |\n  |"
 #define BALL "o"
+#define SCORE "SCORE"
 // Stores our balls position
 typedef struct _Ball {
     int x;
@@ -20,18 +23,21 @@ typedef struct _Paddle {
     int y;
 } Paddle;
 
+static int playerScore = 0;
+static int computerScore = 0;
+
 // Takes in a user input and moves the paddle that direction
-Paddle moveUserPaddle(Paddle userPaddle){
+Paddle moveUserPaddle(Paddle userPaddle, int height){
   if (getch() == '\033') { // if the first value is esc
     getch(); // skip the [
     switch(getch()) { // the real value
         case 'A':
             // code for arrow up
-	  userPaddle.y--;
+	  if(userPaddle.y > 0) userPaddle.y--;
 	  break;
         case 'B':
             // code for arrow down
-	  userPaddle.y++;
+	  if(userPaddle.y < height - 4) userPaddle.y++;
             break;
     }
   }
@@ -39,18 +45,24 @@ Paddle moveUserPaddle(Paddle userPaddle){
   return userPaddle;
 }
 
-Paddle moveComputerPaddle(Paddle computerPaddle, Ball b, int width, char* comp_paddle){
-  //construct computer paddle string
-  //comp_paddle[0] = '|';
-  for(int i = 0; i < 4; i++){
-    for(int j = 0; j < width; j++){
-      comp_paddle[i*width+j] = ' ';
+Paddle moveComputerPaddle(Paddle computerPaddle, Ball b){
+  int r = rand();
+  if(computerPaddle.y > b.y){
+    if(r > RAND_MAX/10){
+      computerPaddle.y --;
     }
-    comp_paddle[i*width+width-1] = '|';
-    comp_paddle[i*width+width] = '\n';
   }
-  computerPaddle.y = b.y-2;
-  mvprintw(computerPaddle.y,computerPaddle.x,comp_paddle);
+  else if(computerPaddle.y < b.y){
+    if(r > RAND_MAX/10){
+      computerPaddle.y ++;
+    }
+  }
+    
+    //computerPaddle.y = b.y-2;
+  //construct computer paddle string
+  for(int i=0; i<4; i++){
+    mvprintw(computerPaddle.y+i,computerPaddle.x,"|");
+  }
   return computerPaddle;
 }
 
@@ -63,14 +75,19 @@ void checkBounceOffPaddle(Paddle paddle, Ball* b, Direction* d){
     }
 }
 
+void printScore(int height, int width){
+  char* scorestr = "%d       %d";
+  mvprintw(0,width/2-strlen(scorestr)/2,scorestr, playerScore, computerScore);
+}
+
 void playGame(Ball b, Direction d, Paddle userPaddle, Paddle computerPaddle, int width, int height) {
-   char* comp_paddle = malloc(4*width+6);
    while (true) {
-    userPaddle = moveUserPaddle(userPaddle);
-    computerPaddle = moveComputerPaddle(computerPaddle,b, width, comp_paddle);
+    printf("here");
+    printScore(height, width);
+    userPaddle = moveUserPaddle(userPaddle, height);
+    computerPaddle = moveComputerPaddle(computerPaddle,b);
     // print ball
     mvprintw(b.y,b.x,BALL);
-
     // move ball for next frame
     b.y += d.y;
     b.x += d.x;
@@ -79,10 +96,14 @@ void playGame(Ball b, Direction d, Paddle userPaddle, Paddle computerPaddle, int
     // bouncecs off back wall for now
     if (b.x == width - 1 || b.x == 0){
         // reset ball and make it go in a random direction
+        b.x==0? computerScore++ : playerScore++;
+        int r = rand();
         b.x = width/2;
         b.y = height/2;
-        d.x *= -1;
-        b.x += d.x;
+	if(r > RAND_MAX/2){
+          d.x *= -1;
+          b.x += d.x;
+	}
     }
     if (b.y == height - 1 || b.y == 0){
         // change direction
@@ -96,10 +117,10 @@ void playGame(Ball b, Direction d, Paddle userPaddle, Paddle computerPaddle, int
     usleep(50000);  // Sleep to show output (Single frame)
     clear();        // Clear output
   }
-   free(comp_paddle);
 }
 
 int main() {
+  srand(time(NULL));      // set random seed (only called once)
   initscr();              // Start ncurses
   nodelay(stdscr, TRUE);  // Don't wait for \n for getch to parse input
   cbreak();               // Switch off input buffering
@@ -124,7 +145,7 @@ Paddle userPaddle = {
 };
 
 Paddle computerPaddle = {
-  width-2, width/2 
+  width-2, height/2 
 };
  while(true){
    // set position of everything
